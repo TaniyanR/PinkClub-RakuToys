@@ -1,5 +1,15 @@
-config/config.php
-.env
-*.log
-/cache/*
-!/cache/.gitkeep
+# Local config (secrets)
+/cache/
+/logs/
+/logs/*.log
+.DS_Store
+Thumbs.db
+vendor/
+
+!public/assets/vendor/
+!public/assets/vendor/**
+
+config.local.php
+
+!logs/.gitkeep
+!logs/
