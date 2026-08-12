@@ -7,6 +7,57 @@ require dirname(__DIR__) . '/lib/admin.php';
 require dirname(__DIR__) . '/lib/rakuten_api.php';
 require dirname(__DIR__) . '/lib/repository.php';
 
+/** @return resource|null */
+function import_lock()
+{
+    $directory = dirname(__DIR__) . '/storage/locks';
+    if (!is_dir($directory) && !@mkdir($directory, 0775, true) && !is_dir($directory)) {
+        throw new RuntimeException('cronロック用ディレクトリを作成できません');
+    }
+    $handle = @fopen($directory . '/rakuten-import.lock', 'c');
+    if (!is_resource($handle)) {
+        throw new RuntimeException('cronロックファイルを開けません');
+    }
+    if (!@flock($handle, LOCK_EX | LOCK_NB)) {
+        fclose($handle);
+        return null;
+    }
+    return $handle;
+}
+
+function cleanup_old_import_data(PDO $pdo, int $batchSize = 500): void
+{
+    $batchSize = max(50, min(2000, $batchSize));
+    foreach ([
+        ['table' => 'import_logs', 'column' => 'created_at', 'days' => 90],
+        ['table' => 'page_views', 'column' => 'created_at', 'days' => 730],
+        ['table' => 'affiliate_clicks', 'column' => 'created_at', 'days' => 730],
+    ] as $target) {
+        try {
+            $sql = sprintf(
+                'DELETE FROM `%s` WHERE `%s` < DATE_SUB(NOW(), INTERVAL %d DAY) ORDER BY id ASC LIMIT %d',
+                $target['table'],
+                $target['column'],
+                $target['days'],
+                $batchSize
+            );
+            $pdo->exec($sql);
+        } catch (Throwable $e) {
+            error_log('[resource_cleanup] ' . $target['table'] . ': ' . $e->getMessage());
+        }
+    }
+}
+
+$importLock = import_lock();
+if (!is_resource($importLock)) {
+    echo '[' . date('Y-m-d H:i:s') . "] import skipped: another process is running\n";
+    exit(0);
+}
+register_shutdown_function(static function () use ($importLock): void {
+    @flock($importLock, LOCK_UN);
+    fclose($importLock);
+});
+
 $pdo = db();
 $base = (array)app_config('rakuten', []);
 $rakuten = $base;
@@ -51,3 +102,5 @@ foreach ($rakuten['keywords'] as $keyword) {
         usleep(500000);
     }
 }
+
+cleanup_old_import_data($pdo, 500);
