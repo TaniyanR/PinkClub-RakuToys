@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS items (
     KEY idx_items_review (review_average, review_count),
     KEY idx_items_affiliate_rate (affiliate_rate),
     KEY idx_items_genre (genre_id),
+    KEY idx_items_last_seen (last_seen_at),
     FULLTEXT KEY ft_items_name_catchcopy (item_name, catchcopy)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -42,4 +43,44 @@ CREATE TABLE IF NOT EXISTS import_logs (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     KEY idx_import_logs_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS settings (
+    setting_key VARCHAR(100) NOT NULL,
+    setting_value TEXT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (setting_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admins (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    username VARCHAR(100) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_admins_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS page_views (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    path VARCHAR(2048) NOT NULL,
+    visitor_hash CHAR(64) NOT NULL,
+    referrer VARCHAR(2048) NULL,
+    user_agent VARCHAR(1000) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_page_views_created (created_at),
+    KEY idx_page_views_visitor_created (visitor_hash, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS affiliate_clicks (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    item_id BIGINT UNSIGNED NOT NULL,
+    visitor_hash CHAR(64) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_clicks_item_created (item_id, created_at),
+    KEY idx_clicks_created (created_at),
+    CONSTRAINT fk_clicks_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
