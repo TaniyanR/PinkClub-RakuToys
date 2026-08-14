@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/lib/bootstrap.php';
+require dirname(__DIR__) . '/lib/analytics.php';
 require dirname(__DIR__) . '/lib/repository.php';
 
 $filters = [
@@ -46,4 +47,4 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
 <?php endforeach ?>
 </div>
 <div class="pagination"><?php if($page>1): ?><a href="?<?= h(http_build_query(array_merge($_GET,['page'=>$page-1]))) ?>">← 前へ</a><?php endif ?><?php if(count($items)===$limit): ?><a href="?<?= h(http_build_query(array_merge($_GET,['page'=>$page+1]))) ?>">次へ →</a><?php endif ?></div>
-</main></body></html>
+</main><?php render_analytics_beacon(); ?></body></html>
