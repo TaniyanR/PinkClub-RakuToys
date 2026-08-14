@@ -80,8 +80,20 @@ foreach (['application_id','access_key','affiliate_id'] as $required) {
 $client = new RakutenApiClient($rakuten);
 $pages = (int)$rakuten['pages_per_keyword'];
 
+$jobs = [];
 foreach ($rakuten['keywords'] as $keyword) {
     for ($page = 1; $page <= $pages; $page++) {
+        $jobs[] = ['keyword' => $keyword, 'page' => $page];
+    }
+}
+
+if ($jobs !== []) {
+    $cursor = max(0, (int)setting($pdo, 'rakuten_import_cursor', '0')) % count($jobs);
+    $jobsPerRun = min(3, count($jobs));
+    for ($processed = 0; $processed < $jobsPerRun; $processed++) {
+        $jobIndex = ($cursor + $processed) % count($jobs);
+        $keyword = (string)$jobs[$jobIndex]['keyword'];
+        $page = (int)$jobs[$jobIndex]['page'];
         try {
             $data = $client->search($keyword, $page);
             $items = $data['items'] ?? [];
@@ -99,7 +111,10 @@ foreach ($rakuten['keywords'] as $keyword) {
             $stmt->execute([$keyword, $page, mb_substr($e->getMessage(), 0, 1000)]);
             fwrite(STDERR, $keyword . ' page=' . $page . ': ' . $e->getMessage() . PHP_EOL);
         }
-        usleep(500000);
+        save_setting($pdo, 'rakuten_import_cursor', (string)(($jobIndex + 1) % count($jobs)));
+        if ($processed + 1 < $jobsPerRun) {
+            sleep(1);
+        }
     }
 }
 
