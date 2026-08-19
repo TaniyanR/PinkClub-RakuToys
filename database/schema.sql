@@ -1,86 +1,12 @@
 CREATE DATABASE IF NOT EXISTS pinkclub_rakutoys CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE pinkclub_rakutoys;
-
-CREATE TABLE IF NOT EXISTS items (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    item_code VARCHAR(255) NOT NULL,
-    item_name TEXT NOT NULL,
-    catchcopy TEXT NULL,
-    item_price INT UNSIGNED NOT NULL DEFAULT 0,
-    item_url TEXT NOT NULL,
-    affiliate_url TEXT NULL,
-    image_url TEXT NULL,
-    shop_code VARCHAR(255) NULL,
-    shop_name VARCHAR(255) NULL,
-    shop_url TEXT NULL,
-    review_count INT UNSIGNED NOT NULL DEFAULT 0,
-    review_average DECIMAL(3,2) NOT NULL DEFAULT 0.00,
-    affiliate_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-    postage_flag TINYINT(1) NOT NULL DEFAULT 0,
-    availability TINYINT(1) NOT NULL DEFAULT 1,
-    genre_id BIGINT UNSIGNED NULL,
-    raw_json JSON NULL,
-    first_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uq_items_item_code (item_code),
-    KEY idx_items_price (item_price),
-    KEY idx_items_review (review_average, review_count),
-    KEY idx_items_affiliate_rate (affiliate_rate),
-    KEY idx_items_genre (genre_id),
-    KEY idx_items_last_seen (last_seen_at),
-    FULLTEXT KEY ft_items_name_catchcopy (item_name, catchcopy)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS import_logs (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    keyword VARCHAR(255) NOT NULL,
-    page_no INT UNSIGNED NOT NULL DEFAULT 1,
-    fetched_count INT UNSIGNED NOT NULL DEFAULT 0,
-    status ENUM('success','error') NOT NULL,
-    message TEXT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    KEY idx_import_logs_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS settings (
-    setting_key VARCHAR(100) NOT NULL,
-    setting_value TEXT NULL,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (setting_key)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS admins (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    username VARCHAR(100) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uq_admins_username (username)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS page_views (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    path VARCHAR(2048) NOT NULL,
-    visitor_hash CHAR(64) NOT NULL,
-    referrer VARCHAR(2048) NULL,
-    user_agent VARCHAR(1000) NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    KEY idx_page_views_created (created_at),
-    KEY idx_page_views_visitor_created (visitor_hash, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS affiliate_clicks (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    item_id BIGINT UNSIGNED NOT NULL,
-    visitor_hash CHAR(64) NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    KEY idx_clicks_item_created (item_id, created_at),
-    KEY idx_clicks_created (created_at),
-    CONSTRAINT fk_clicks_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS items (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,item_code VARCHAR(255) NOT NULL,item_name TEXT NOT NULL,catchcopy TEXT NULL,item_price INT UNSIGNED NOT NULL DEFAULT 0,item_url TEXT NOT NULL,affiliate_url TEXT NULL,image_url TEXT NULL,shop_code VARCHAR(255) NULL,shop_name VARCHAR(255) NULL,shop_url TEXT NULL,review_count INT UNSIGNED NOT NULL DEFAULT 0,review_average DECIMAL(3,2) NOT NULL DEFAULT 0.00,affiliate_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00,postage_flag TINYINT(1) NOT NULL DEFAULT 0,availability TINYINT(1) NOT NULL DEFAULT 1,genre_id BIGINT UNSIGNED NULL,raw_json JSON NULL,first_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,last_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_items_item_code(item_code),KEY idx_items_price(item_price),KEY idx_items_review(review_average,review_count),KEY idx_items_genre(genre_id),KEY idx_items_shop(shop_code),KEY idx_items_last_seen(last_seen_at),FULLTEXT KEY ft_items_name_catchcopy(item_name,catchcopy)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS item_images (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,item_id BIGINT UNSIGNED NOT NULL,image_url TEXT NOT NULL,sort_order TINYINT UNSIGNED NOT NULL DEFAULT 0,PRIMARY KEY(id),KEY idx_item_images_item(item_id,sort_order),CONSTRAINT fk_item_images_item FOREIGN KEY(item_id) REFERENCES items(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS categories (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,name VARCHAR(100) NOT NULL,slug VARCHAR(120) NOT NULL,rakuten_genre_id BIGINT UNSIGNED NULL,keywords TEXT NULL,ng_keywords TEXT NULL,sort_order INT NOT NULL DEFAULT 0,is_active TINYINT(1) NOT NULL DEFAULT 1,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_categories_slug(slug),KEY idx_categories_genre(rakuten_genre_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS item_categories (item_id BIGINT UNSIGNED NOT NULL,category_id BIGINT UNSIGNED NOT NULL,PRIMARY KEY(item_id,category_id),KEY idx_item_categories_category(category_id),CONSTRAINT fk_ic_item FOREIGN KEY(item_id) REFERENCES items(id) ON DELETE CASCADE,CONSTRAINT fk_ic_category FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS rakuten_rankings (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,genre_id BIGINT UNSIGNED NOT NULL DEFAULT 0,rank_no INT UNSIGNED NOT NULL,item_code VARCHAR(255) NOT NULL,item_name TEXT NOT NULL,item_price INT UNSIGNED NOT NULL DEFAULT 0,item_url TEXT NULL,affiliate_url TEXT NULL,image_url TEXT NULL,shop_name VARCHAR(255) NULL,review_count INT UNSIGNED NOT NULL DEFAULT 0,review_average DECIMAL(3,2) NOT NULL DEFAULT 0.00,fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_ranking_genre_rank(genre_id,rank_no),KEY idx_ranking_fetched(fetched_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS import_logs (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,keyword VARCHAR(255) NOT NULL,page_no INT UNSIGNED NOT NULL DEFAULT 1,fetched_count INT UNSIGNED NOT NULL DEFAULT 0,status ENUM('success','error') NOT NULL,message TEXT NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id),KEY idx_import_logs_created(created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS settings (setting_key VARCHAR(100) NOT NULL,setting_value TEXT NULL,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,PRIMARY KEY(setting_key)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS admins (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,username VARCHAR(100) NOT NULL,password_hash VARCHAR(255) NOT NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_admins_username(username)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS page_views (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,path VARCHAR(2048) NOT NULL,visitor_hash CHAR(64) NOT NULL,referrer VARCHAR(2048) NULL,user_agent VARCHAR(1000) NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id),KEY idx_page_views_created(created_at),KEY idx_page_views_visitor_created(visitor_hash,created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS affiliate_clicks (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,item_id BIGINT UNSIGNED NOT NULL,visitor_hash CHAR(64) NOT NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id),KEY idx_clicks_item_created(item_id,created_at),KEY idx_clicks_created(created_at),CONSTRAINT fk_clicks_item FOREIGN KEY(item_id) REFERENCES items(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
