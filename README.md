@@ -1,65 +1,60 @@
 # PinkClub-RakuToys
 
-楽天市場APIを利用した、アダルトグッズ専門の比較・検索アフィリエイトサイトです。
+楽天市場APIを利用した、大人向けグッズ専門の比較・検索アフィリエイトサイトです。PinkClub-FLの軽量・SEO・管理思想を引き継ぎつつ、動画ではなく物販向けに設計しています。
 
-## 方針
+## 公開構成
 
-- PHP + MySQL/MariaDB + JavaScript
-- フレームワーク不使用
-- 楽天市場商品検索API 2026-07-01版を利用
-- Application ID / Access Key / Affiliate IDはGitに保存しない
-- 商品はDBへ保存し、公開側はDB検索を基本とする
-- キーワード・価格帯・レビュー評価・送料無料・在庫・並び順で検索
-- 商品詳細から楽天アフィリエイトURLへ遷移
-- cronで商品情報を定期同期
-- SEO向けに商品詳細ページを個別URL化
+- TOP
+- 商品一覧・検索
+- カテゴリ
+- ランキング（楽天人気 / PinkClub内人気）
+- 商品詳細（最大3画像、価格、レビュー、送料、ショップ、関連商品）
 
-## セットアップ
+## API
 
-1. `config/config.example.php` を `config/config.php` にコピーします。
-2. DB接続情報と楽天API情報を設定します。
-3. `database/schema.sql` をMySQL/MariaDBへ適用します。
-4. `scripts/import.php` をCLIで実行して商品を取得します。
-5. Webルートを `public/` に設定します。
+- 楽天市場商品検索API 2026-07-01
+- 楽天市場ジャンル検索API 2026-07-01
+- 楽天市場ランキングAPI 2022-06-01
+
+Application ID / Access Key / Affiliate ID はGitへ保存しません。
+
+## カテゴリ方針
+
+楽天の正式な Genre ID を内部データとして使用し、公開側では PinkClub 向けの分かりやすいカテゴリ名へ整理します。管理画面の「カテゴリ管理」で公開名、スラッグ、Genre ID、補助キーワード、NGキーワードを設定します。
+
+## 自動取得
 
 ```bash
 php scripts/import.php
 ```
 
-## 楽天API設定
+cron専用です。1回の実行で最大3ジョブを処理し、APIアクセス間に待機を入れます。同時実行はロックします。商品取得後に楽天ランキングも更新します。
 
-必要な値:
+## セットアップ
 
-- Application ID
-- Access Key
-- Affiliate ID
+1. `config/config.example.php` を `config/config.php` にコピーしてDB接続情報を設定
+2. `/public/setup_check.php` でテーブル作成と管理者作成
+3. `/admin/login.php` へログイン
+4. 「楽天API・サイト設定」でAPI情報を保存
+5. 「カテゴリ管理」で公開カテゴリと楽天Genre IDを登録
+6. cronで `scripts/import.php` を実行
 
-取得キーワードは `config/config.php` の `rakuten.keywords` で複数指定できます。
+既存環境を更新する場合も、新しいテーブルを作成するために一度 `/public/setup_check.php` のセットアップ処理を実行してください。既存の商品・アクセス解析データは削除しません。
 
-例:
+## 検索条件
 
-```php
-'keywords' => [
-    'アダルトグッズ',
-    'ローター',
-    'バイブ',
-    '吸引',
-    'ラブグッズ',
-],
-```
+キーワード、カテゴリ、価格帯、レビュー評価、送料無料、ショップ、並び順に対応します。
 
-## 公開URL
+## ランキング
 
-- `/` トップ・検索
-- `/search.php` 商品検索
-- `/item.php?id=123` 商品詳細
+- 楽天人気ランキング: 楽天市場ランキングAPIから取得
+- PinkClub内人気ランキング: 当サイトの商品詳細PVを30日集計して算出
 
-## 管理URL
+## データとSEO
 
-- `/admin/` API設定確認
-
-## 開発方針
-
-- 既存PinkClubシリーズと同様、軽量・安全・SEO重視
-- APIキーやDBパスワードはコミットしない
-- 作業ブランチ + Draft PRで進める
+- 商品コードでupsert
+- 商品画像は最大3件を別テーブル保存
+- 商品詳細を個別URL化
+- PV/UU・流入・アフィリエイトクリックを計測
+- 公開画面にはアフィリエイト料率を表示しない
+- APIキーやDBパスワードをGitへ保存しない
